@@ -128,7 +128,7 @@ func (z *zfs) Run(driverName, nodeID, endpoint string) {
 			csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
 			csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 			csi.ControllerServiceCapability_RPC_PUBLISH_READONLY,
-			csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
+			//csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
 		})
 	z.driver.AddVolumeCapabilityAccessModes(
 		[]csi.VolumeCapability_AccessMode_Mode{

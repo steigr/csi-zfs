@@ -1,0 +1,39 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: zfs-snapshotter
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csi-lvm-fast-snapshotter
+  template:
+    metadata:
+      labels:
+        app: csi-lvm-fast-snapshotter
+    spec:
+      serviceAccountName: csi-snapshotter
+      containers:
+        - name: csi-snapshotter
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+          image: 'quay.io/k8scsi/csi-snapshotter:v1.0.1'
+          args:
+            - '--csi-address=$(ADDRESS)'
+            - '--connection-timeout=15s'
+            - '--snapshotter=zfs'
+            - '--v=9'
+            - '--logtostderr'
+      serviceAccount: csi-snapshotter
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/zfs
+            type: DirectoryOrCreate
+  serviceName: csi-lvm-fast-snapshotter
+

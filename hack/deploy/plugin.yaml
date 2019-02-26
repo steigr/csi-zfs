@@ -1,0 +1,92 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: zfs-driver
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: zfs-driver
+  template:
+    metadata:
+      labels:
+        app: zfs-driver
+    spec:
+      serviceAccountName: csi-driver-registrar
+      containers:
+        - name: driver-registrar
+          env:
+            - name: CSI_ENDPOINT
+              value: '/csi/csi.sock'
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+          image: 'quay.io/k8scsi/csi-node-driver-registrar:canary'
+          args:
+            - '--v=9'
+            - '--csi-address=$(CSI_ENDPOINT)'
+            - '--kubelet-registration-path=/var/lib/kubelet/plugins/zfs/csi.sock'
+        - name: zfs
+          env:
+            - name: CSI_ENDPOINT
+              value: 'unix:///csi/csi.sock'
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+          securityContext:
+            privileged: true
+            procMount: Default
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: volume-dir
+              mountPath: /var/lib/storage
+              mountPropagation: Bidirectional
+            - name: mountpoint-dir
+              mountPath: /var/lib/kubelet/pods
+              mountPropagation: Bidirectional
+          image: 'quay.io/steigr/csi-zfs:v0.0.1'
+          args:
+            - '--v=9'
+            - '--drivername=zfs'
+            - '--endpoint=$(CSI_ENDPOINT)'
+            - '--nodeid=$(KUBE_NODE_NAME)'
+        - name: zfsd
+          securityContext:
+            privileged: true
+            procMount: Default
+          args:
+            - '--v=9'
+            - '--logtostderr'
+          volumeMounts:
+            - name: volume-dir
+              mountPath: /var/lib/storage
+              mountPropagation: Bidirectional
+          image: 'quay.io/steigr/zfsd:v0.0.2'
+      serviceAccount: csi-driver-registrar
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/zfs
+            type: DirectoryOrCreate
+        - name: mountpoint-dir
+          hostPath:
+            path: /var/lib/kubelet/pods
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: Directory
+        - name: volume-dir
+          hostPath:
+            path: /var/lib/storage
+            type: Directory

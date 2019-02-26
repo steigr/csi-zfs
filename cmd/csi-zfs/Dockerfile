@@ -1,7 +1,6 @@
 FROM golang:1.11.4 AS builder
 
-# ARG CSI_RELEASE=v1.0.0
-ARG CSI_RELEASE=master
+ARG CSI_RELEASE=v1.0.0
 ENV CSI_RELEASE=$CSI_RELEASE \
     CSI_PKG=github.com/container-storage-interface/spec \
     CSI_PROTOBUF_GO=lib/go/csi/csi.pb.go
@@ -24,6 +23,6 @@ COPY cmd/csi-zfs cmd/csi-zfs
 COPY pkg pkg
 RUN  go get -v $PKG/cmd/csi-zfs
 
-FROM alpine:3.8 AS csi-zfs
+FROM alpine:3.9 AS csi-zfs
 COPY --from=builder /go/bin/csi-zfs /bin/csi-zfs
 ENTRYPOINT ["csi-zfs"]

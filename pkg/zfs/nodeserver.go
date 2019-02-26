@@ -17,7 +17,6 @@ limitations under the License.
 package zfs
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"os"
 
 	"github.com/golang/glog"
@@ -142,42 +141,55 @@ func (ns *nodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstag
 	return &csi.NodeUnstageVolumeResponse{}, nil
 }
 
-func (ns *nodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse,error) {
-	glog.V(9).Info("NodeExpandVolume()")
-	glog.V(9).Info(spew.Sdump(req))
-	// Check arguments
-	if len(req.GetVolumeId()) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "Volume ID missing in request")
+//func (ns *nodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse,error) {
+//	glog.V(9).Info("NodeExpandVolume()")
+//	glog.V(9).Info(spew.Sdump(req))
+//	// Check arguments
+//	if len(req.GetVolumeId()) == 0 {
+//		return nil, status.Error(codes.InvalidArgument, "Volume ID missing in request")
+//	}
+//	return &csi.NodeExpandVolumeResponse{},nil
+//}
+
+func nodeCapabilityStageUnstageVolume() *csi.NodeServiceCapability {
+ glog.V(9).Infof("exposing STAGE_UNSTAGE_VOLUME capability")
+	return &csi.NodeServiceCapability{
+		Type: &csi.NodeServiceCapability_Rpc{
+			Rpc: &csi.NodeServiceCapability_RPC{
+				Type: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME,
+			},
+		},
 	}
-	return &csi.NodeExpandVolumeResponse{},nil
 }
+
+func nodeCapabilityGetVolumeStats() *csi.NodeServiceCapability {
+ glog.V(9).Infof("exposing GET_VOLUME_STATS capability")
+	return &csi.NodeServiceCapability{
+		Type: &csi.NodeServiceCapability_Rpc{
+			Rpc: &csi.NodeServiceCapability_RPC{
+				Type: csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
+			},
+		},
+	}
+}
+
+//func nodeCapabilityExpandVolume() *csi.NodeServiceCapability {
+//  glog.V(9).Infof("exposing EXPAND_VOLUME capability")
+//	return &csi.NodeServiceCapability{
+//		Type: &csi.NodeServiceCapability_Rpc{
+//			Rpc: &csi.NodeServiceCapability_RPC{
+//				Type: csi.NodeServiceCapability_RPC_EXPAND_VOLUME,
+//			},
+//		},
+//	}
+//}
 
 func (ns *nodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 	glog.V(5).Infof("Using zfs NodeGetCapabilities")
+	capabilities := &csi.NodeGetCapabilitiesResponse{}
+	capabilities.Capabilities = append(capabilities.Capabilities,nodeCapabilityStageUnstageVolume())
+	capabilities.Capabilities = append(capabilities.Capabilities,nodeCapabilityGetVolumeStats())
+	//capabilities.Capabilities = append(capabilities.Capabilities,nodeCapabilityExpandVolume())
 
-	return &csi.NodeGetCapabilitiesResponse{
-		Capabilities: []*csi.NodeServiceCapability{
-			{
-				Type: &csi.NodeServiceCapability_Rpc{
-					Rpc: &csi.NodeServiceCapability_RPC{
-						Type: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME,
-					},
-				},
-			},
-			{
-				Type: &csi.NodeServiceCapability_Rpc{
-					Rpc: &csi.NodeServiceCapability_RPC{
-						Type: csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
-					},
-				},
-			},
-			{
-				Type: &csi.NodeServiceCapability_Rpc{
-					Rpc: &csi.NodeServiceCapability_RPC{
-						Type: csi.NodeServiceCapability_RPC_EXPAND_VOLUME,
-					},
-				},
-			},
-		},
-	}, nil
+	return capabilities, nil
 }

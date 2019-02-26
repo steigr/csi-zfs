@@ -38,6 +38,7 @@ type controllerServer struct {
 
 func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	glog.V(9).Info("CreateVolume()")
+	glog.V(9).Info(spew.Sdump(req))
 
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		glog.V(3).Infof("invalid create volume req: %v", req)
@@ -55,7 +56,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 	// TODO: implement block support via vdevs
 	for _, cap := range caps {
 		if cap.GetBlock() != nil {
-			return nil, status.Error(codes.Unimplemented, "Block Volume not supported")
+			return nil, status.Error(codes.Unimplemented, "Block Volume not implemented")
 		}
 	}
 	volumeID := uuid.NewUUID().String()
@@ -184,14 +185,21 @@ func (cs *controllerServer) ListSnapshots(ctx context.Context, req *csi.ListSnap
 	return &csi.ListSnapshotsResponse{}, nil
 }
 
-func (cs *controllerServer) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
-	glog.V(9).Info("ControllerExpandVolume()")
-	glog.V(9).Info(spew.Sdump(req))
-	return &csi.ControllerExpandVolumeResponse{}, nil
-}
+//func (cs *controllerServer) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+//	glog.V(9).Info("ControllerExpandVolume()")
+//	glog.V(9).Info(spew.Sdump(req))
+//	return &csi.ControllerExpandVolumeResponse{}, nil
+//}
 
 func (cs *controllerServer) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
 	glog.V(9).Info("GetCapacity()")
 	glog.V(9).Info(spew.Sdump(req))
 	return &csi.GetCapacityResponse{}, nil
+}
+
+func (cs *controllerServer) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
+	glog.V(9).Info("ControllerPublishVolume()")
+	glog.V(9).Info(spew.Sdump(req))
+	response := &csi.ControllerPublishVolumeResponse{}
+	return response, nil
 }

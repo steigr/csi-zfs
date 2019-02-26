@@ -1,0 +1,46 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: zfs-provisioner
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zfs-provisioner
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: zfs-provisioner
+    spec:
+      serviceAccountName: csi-provisioner
+      containers:
+        - name: csi-provisioner
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+          terminationMessagePolicy: File
+          image: 'quay.io/k8scsi/csi-provisioner:v1.0.1'
+          args:
+            - '--provisioner=zfs'
+            - '--csi-address=$(ADDRESS)'
+            - '--connection-timeout=15s'
+            - '--v=9'
+            - '--logtostderr'
+      serviceAccount: csi-provisioner
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/zfs
+            type: DirectoryOrCreate
+  serviceName: zfs-provisioner
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  revisionHistoryLimit: 10

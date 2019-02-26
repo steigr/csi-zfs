@@ -1,0 +1,44 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: zfs-attacher
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zfs-attacher
+  template:
+    metadata:
+      labels:
+        app: zfs-attacher
+    spec:
+      restartPolicy: Always
+      serviceAccountName: csi-attacher
+      schedulerName: default-scheduler
+      containers:
+        - name: csi-attacher
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+          image: 'quay.io/k8scsi/csi-attacher:v0.4.2'
+          args:
+            - '--v=5'
+            - '--csi-address=$(ADDRESS)'
+      serviceAccount: csi-attacher
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/zfs
+            type: DirectoryOrCreate
+      dnsPolicy: ClusterFirst
+  serviceName: zfs-attacher
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  revisionHistoryLimit: 10
